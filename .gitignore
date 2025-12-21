@@ -1,0 +1,14 @@
+# colcon/CMake build and install artifacts
+build/
+install/
+log/
+
+# Python cache files
+__pycache__/
+
+# Compiled Python files
+*.pyc
+
+# Backup/swap files sometimes created by editors like Vim
+*.swp
+*~
