@@ -9,9 +9,12 @@ public:
     ImageSubscriber()
         : Node("image_subscriber")
     {
+        rclcpp::QoS qos(rclcpp::KeepLast(5));
+        qos.best_effort();
+        qos.durability_volatile();
         sub_ = create_subscription<sensor_msgs::msg::Image>(
             "/image",
-            10,
+            qos,
             std::bind(&ImageSubscriber::image_callback, this, std::placeholders::_1));
 
         RCLCPP_INFO(get_logger(), "Image subscriber started");
@@ -20,13 +23,19 @@ public:
 private:
     void image_callback(const sensor_msgs::msg::Image::SharedPtr msg)
     {
+        rclcpp::Time receive_time = now();
+        rclcpp::Time send_time = msg->header.stamp;
+        rclcpp::Duration latency = receive_time - send_time;
+
         RCLCPP_INFO(
             get_logger(),
-            "Received image: %ux%u | encoding=%s | first_byte=%u",
+            "Received image: %ux%u | encoding=%s | first_byte=%u | Latency: %.3f ms",
             msg->width,
             msg->height,
             msg->encoding.c_str(),
-            msg->data.empty() ? 0 : msg->data[0]);
+            msg->data.empty() ? 0 : msg->data[0],
+            latency.seconds() * 1000.0
+        );
     }
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_;

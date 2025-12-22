@@ -12,7 +12,11 @@ public:
     ImagePublisher()
         : Node("image_publisher")
     {
-        pub_ = create_publisher<sensor_msgs::msg::Image>("/image", 10);
+        rclcpp::QoS qos(rclcpp::KeepLast(5));
+        qos.best_effort();
+        qos.durability_volatile();
+        
+        pub_ = create_publisher<sensor_msgs::msg::Image>("/image", qos);
 
         timer_ = create_wall_timer(
             100ms, std::bind(&ImagePublisher::publish_image, this));
@@ -23,8 +27,8 @@ public:
 private:
     void publish_image()
     {
-        const int width = 320;
-        const int height = 240;
+        const int width = 1920;
+        const int height = 1080;
 
         sensor_msgs::msg::Image img;
         img.header.stamp = now();
