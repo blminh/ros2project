@@ -8,77 +8,34 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(cv_bridge REQUIRED)
 
 find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV version: ${OpenCV_VERSION}")
 
 find_package(shm_interfaces REQUIRED)
+find_package(utils REQUIRED)
 
-##################
-# loan msg
-add_executable(publisher src/publisher.cpp)
-add_executable(subscriber src/subscriber.cpp)
-
-ament_target_dependencies(publisher rclcpp sensor_msgs std_msgs)
-ament_target_dependencies(subscriber rclcpp sensor_msgs std_msgs)
-
-install(TARGETS
-  publisher
-  subscriber
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-####################
-#zero copy
 add_executable(shm_image_publisher src/image_publisher.cpp)
 ament_target_dependencies(shm_image_publisher rclcpp
   shm_interfaces
   sensor_msgs
-  cv_bridge)
+  OpenCV
+  utils
+)
 
 add_executable(shm_image_subscriber src/image_subscriber.cpp)
 ament_target_dependencies(shm_image_subscriber rclcpp
   shm_interfaces
   sensor_msgs
-  cv_bridge)
+  # OpenCV
+  utils
+)
 
 install(TARGETS
   shm_image_publisher
   shm_image_subscriber
   DESTINATION lib/${PROJECT_NAME}
-)
-
-############
-# Component
-add_library(image_publish_component SHARED src/img_pub_component.cpp)
-ament_target_dependencies(
-  image_publish_component
-  rclcpp
-  rclcpp_components
-  sensor_msgs
-  cv_bridge
-)
-rclcpp_components_register_nodes(image_publish_component "image_demo::ImagePublisher")
-
-add_library(image_subscribe_component SHARED src/img_sub_component.cpp)
-ament_target_dependencies(
-  image_subscribe_component
-  rclcpp
-  rclcpp_components
-  sensor_msgs
-  cv_bridge
-)
-rclcpp_components_register_nodes(image_subscribe_component "image_demo::ImageSubscriber")
-
-install(
-  TARGETS
-    image_publish_component
-    image_subscribe_component
-  LIBRARY DESTINATION lib
 )
 
 install(DIRECTORY images/
