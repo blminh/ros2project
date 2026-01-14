@@ -9,7 +9,7 @@ find_package(OpenCV REQUIRED)
 
 find_package(shm_interfaces REQUIRED)
 
-add_library(utils
+add_library(utils SHARED
   src/conversions.cpp
 )
 
@@ -34,6 +34,8 @@ install(
   TARGETS utils
   EXPORT export_utils
 )
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ament_export_targets(export_utils)
 ament_export_dependencies(std_msgs shm_interfaces)

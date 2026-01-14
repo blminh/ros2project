@@ -21,18 +21,17 @@ public:
 
         sub_ = create_subscription<PodImage8m>(
             "/shm_image",
-            qos,
+            10,
             std::bind(&SHMImageSubscriber::image_callback, this, std::placeholders::_1));
 
         RCLCPP_INFO(get_logger(), "Image subscriber started");
 
-        pub_ = create_publisher<sensor_msgs::msg::Image>("/topic/sensor_image", qos);
+        pub_ = create_publisher<sensor_msgs::msg::Image>("/topic/sensor_image", 10);
     }
 
 private:
     void image_callback(const PodImage8m::ConstSharedPtr &msg)
     {
-
         const rclcpp::Time now = this->get_clock()->now();
         const rclcpp::Time pub_time(msg->header.stamp);
         const int64_t latency_ns = (now - pub_time).nanoseconds();
@@ -53,7 +52,7 @@ private:
                 avg_latency_us);
         }
 
-        auto sensorImg = shm_msgs::toSensorImage(*msg);
+        auto sensorImg = shm_msgs::fromPodImage8m(*msg);
         pub_->publish(sensorImg);
     }
 

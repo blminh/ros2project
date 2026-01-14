@@ -51,8 +51,7 @@ namespace shm_msgs
         shm_interfaces::msg::PodImage8m::SharedPtr toImageMsg8m() const;
         void toImageMsg(shm_interfaces::msg::PodImage8m &ros_image) const;
     };
-
-    sensor_msgs::msg::Image toSensorImage(const shm_interfaces::msg::PodImage8m &source);
+    sensor_msgs::msg::Image fromPodImage8m(const shm_interfaces::msg::PodImage8m &podImage8m);
 }
 
 #endif // SHM_INTERFACES__CONVERSIONS_HPP_

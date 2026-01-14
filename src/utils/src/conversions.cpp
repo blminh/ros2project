@@ -41,7 +41,7 @@ namespace shm_msgs
         }
     }
 
-    sensor_msgs::msg::Image toSensorImage(const shm_interfaces::msg::PodImage8m &source)
+    sensor_msgs::msg::Image fromPodImage8m(const shm_interfaces::msg::PodImage8m &source)
     {
         sensor_msgs::msg::Image sensorImage;
         sensorImage.header = shm_msgs::get_header(source.header);
@@ -51,7 +51,7 @@ namespace shm_msgs
         sensorImage.step = source.step;
         const size_t size = source.data.size();
         sensorImage.data.resize(size);
-        
+
         std::memcpy(sensorImage.data.data(), source.data.data(), size);
         return sensorImage;
     }
