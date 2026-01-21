@@ -25,6 +25,8 @@ namespace shm_msgs
     };
 
     class CvImage;
+    typedef std::shared_ptr<CvImage> CvImagePtr;
+    typedef std::shared_ptr<CvImage const> CvImageConstPtr;
 
     class CvImage
     {
@@ -50,8 +52,14 @@ namespace shm_msgs
 
         shm_interfaces::msg::PodImage8m::SharedPtr toImageMsg8m() const;
         void toImageMsg(shm_interfaces::msg::PodImage8m &ros_image) const;
+
+        CvImagePtr cvtColor(
+            const CvImageConstPtr &source,
+            const std::string &encoding);
     };
+
     sensor_msgs::msg::Image fromPodImage8m(const shm_interfaces::msg::PodImage8m &podImage8m);
+    CvImagePtr toCvShareFromPodImage(const shm_interfaces::msg::PodImage8m &pod);
 }
 
 #endif // SHM_INTERFACES__CONVERSIONS_HPP_

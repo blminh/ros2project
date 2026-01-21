@@ -1,5 +1,11 @@
-#include "shm_msgs/conversions.hpp"
 #include <iostream>
+
+#include <opencv2/imgproc.hpp>
+
+#include "shm_msgs/conversions.hpp"
+#include <shm_msgs/image_encodings.hpp>
+
+namespace enc = shm_msgs::image_encodings;
 
 namespace shm_msgs
 {
@@ -39,6 +45,65 @@ namespace shm_msgs
                 cv_data_ptr += image.step;
             }
         }
+    }
+
+    CvImagePtr CvImage::cvtColor(
+        const CvImageConstPtr &source,
+        const std::string &target_encoding)
+    {
+        if (!source)
+        {
+            throw shm_msgs::Exception("CvImage::cvtColor: source is null");
+        }
+
+        // ===== YUY2 -> RGB8 =====
+        if (source->encoding == "yuv422_yuy2" &&
+            target_encoding == "rgb8")
+        {
+            auto out = std::make_shared<CvImage>();
+            out->header = source->header;
+            out->encoding = "rgb8";
+
+            // source image must be CV_8UC2
+            if (source->image.type() != CV_8UC2)
+            {
+                throw shm_msgs::Exception(
+                    "Expected CV_8UC2 for yuv422_yuy2");
+            }
+
+            cv::cvtColor(source->image, out->image, cv::COLOR_YUV2RGB_YUY2);
+            return out;
+        }
+
+        // ===== same encoding =====
+        if (source->encoding == target_encoding)
+        {
+            auto out = std::make_shared<CvImage>();
+            out->header = source->header;
+            out->encoding = source->encoding;
+            out->image = source->image;
+            return out;
+        }
+
+        throw shm_msgs::Exception(
+            "Unsupported encoding conversion: " +
+            source->encoding + " -> " + target_encoding);
+    }
+
+    CvImagePtr toCvShareFromPodImage(
+        const shm_interfaces::msg::PodImage8m &pod)
+    {
+        auto cv_img = std::make_shared<shm_msgs::CvImage>();
+
+        cv_img->encoding = shm_msgs::get_str(pod.encoding);
+        cv_img->image = cv::Mat(
+            pod.height,
+            pod.width,
+            CV_8UC2, // YUY2
+            const_cast<uint8_t *>(pod.data.data()),
+            pod.step);
+
+        return cv_img;
     }
 
     sensor_msgs::msg::Image fromPodImage8m(const shm_interfaces::msg::PodImage8m &source)

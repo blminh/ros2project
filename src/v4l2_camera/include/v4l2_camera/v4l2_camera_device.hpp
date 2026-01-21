@@ -26,6 +26,8 @@
 #include "v4l2_camera/image_format.hpp"
 #include "v4l2_camera/pixel_format.hpp"
 
+#include "shm_interfaces/msg/pod_image8m.hpp"
+
 namespace v4l2_camera
 {
 
@@ -69,7 +71,8 @@ public:
 
   std::string getCameraName();
 
-  sensor_msgs::msg::Image::UniquePtr capture();
+  // sensor_msgs::msg::Image::UniquePtr capture();
+  shm_interfaces::msg::PodImage8m::UniquePtr capture();
 
 private:
   /// Image buffer

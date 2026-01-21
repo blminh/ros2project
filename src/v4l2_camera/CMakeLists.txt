@@ -24,6 +24,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(camera_info_manager REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(std_msgs REQUIRED)
 
 find_package(shm_interfaces REQUIRED)
 find_package(utils REQUIRED)
@@ -44,6 +45,7 @@ ament_target_dependencies(v4l2_camera
   "camera_info_manager"
   "cv_bridge"
   "image_transport"
+  "std_msgs"
   "shm_interfaces"
   "utils"
 )
@@ -70,17 +72,6 @@ target_include_directories(v4l2_camera_node PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(v4l2_camera_node v4l2_camera)
 target_compile_options(v4l2_camera_node PRIVATE -Werror)
-
-add_executable(v4l2_camera_compose_test src/v4l2_camera_compose_test.cpp)
-target_include_directories(v4l2_camera_compose_test PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_link_libraries(v4l2_camera_compose_test v4l2_camera)
-target_compile_options(v4l2_camera_compose_test PRIVATE -Werror)
-
-install(TARGETS v4l2_camera_node v4l2_camera_compose_test
-  EXPORT export_${PROJECT_NAME}
-  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

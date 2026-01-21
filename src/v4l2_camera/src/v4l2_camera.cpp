@@ -27,6 +27,8 @@
 #include "v4l2_camera/fourcc.hpp"
 #include "v4l2_camera/parameters.hpp"
 
+#include <std_msgs/msg/header.hpp>
+
 using namespace std::chrono_literals;
 
 namespace v4l2_camera
@@ -38,19 +40,6 @@ namespace v4l2_camera
                     get_node_logging_interface()},
         canceled_{false}
   {
-    // Prepare publisher
-    // This should happen before registering on_set_parameters_callback,
-    // else transport plugins will fail to declare their parameters
-    if (options.use_intra_process_comms())
-    {
-      image_pub_ = create_publisher<sensor_msgs::msg::Image>("image_raw", 10);
-      info_pub_ = create_publisher<sensor_msgs::msg::CameraInfo>("camera_info", 10);
-    }
-    else
-    {
-      camera_transport_pub_ = image_transport::create_camera_publisher(this, "image_raw");
-    }
-
     // PodImage8m
     pod_image_pub_ = create_publisher<shm_interfaces::msg::PodImage8m>("/shm_image", 10);
 
@@ -64,8 +53,6 @@ namespace v4l2_camera
     {
       return;
     }
-
-    cinfo_ = std::make_shared<camera_info_manager::CameraInfoManager>(this, camera_->getCameraName());
 
     parameters_.declareDeviceParameters(*camera_);
 
@@ -91,8 +78,8 @@ namespace v4l2_camera
           while (rclcpp::ok() && !canceled_.load())
           {
             RCLCPP_DEBUG(get_logger(), "Capture...");
-            auto img = camera_->capture();
-            if (img == nullptr)
+            auto podImg = camera_->capture(); // UniquePtr PodImage
+            if (podImg == nullptr)
             {
               // Failed capturing image, assume it is temporarily and continue a bit later
               std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -100,50 +87,22 @@ namespace v4l2_camera
             }
 
             auto stamp = now();
-            if (img->encoding != output_encoding_)
+            auto outImg = std::make_unique<shm_interfaces::msg::PodImage8m>();
+            std::string podImgEncoding = shm_msgs::get_str(podImg->encoding);
+            if (podImgEncoding != output_encoding_)
             {
               RCLCPP_WARN_ONCE(
                   get_logger(),
                   "Image encoding not the same as requested output, performing possibly slow conversion: "
                   "%s => %s",
-                  img->encoding.c_str(), output_encoding_.c_str());
-              img = convert(*img);
-            }
-            img->header.stamp = stamp;
-            img->header.frame_id = camera_frame_id_;
-
-            auto ci = std::make_unique<sensor_msgs::msg::CameraInfo>(cinfo_->getCameraInfo());
-            if (!checkCameraInfo(*img, *ci))
-            {
-              *ci = sensor_msgs::msg::CameraInfo{};
-              ci->height = img->height;
-              ci->width = img->width;
+                  podImgEncoding.c_str(),
+                  output_encoding_.c_str());
+              auto cv_yuy2 = shm_msgs::toCvShareFromPodImage(*podImg);
+              auto cv_rbg = cv_yuy2->cvtColor(cv_yuy2, "rgb8");
+              cv_rbg->toImageMsg(*outImg);
             }
 
-            ci->header.stamp = stamp;
-
-            if (get_node_options().use_intra_process_comms())
-            {
-              RCLCPP_DEBUG_STREAM(get_logger(), "Image message address [PUBLISH]:\t" << img.get());
-              image_pub_->publish(std::move(img));
-              info_pub_->publish(std::move(ci));
-            }
-            else
-            {
-              camera_transport_pub_.publish(*img, *ci);
-            }
-
-            // PodImage8m
-            m_input_cvimage->header.frame_id = camera_frame_id_;
-            m_input_cvimage->header.stamp = stamp;
-            std::string encoding = img->encoding.c_str();
-            m_input_cvimage->encoding = encoding;
-            cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(*img, encoding);
-            m_input_cvimage->image = cv_ptr->image;
-            auto loanedMsg = pod_image_pub_->borrow_loaned_message();
-            auto &getLoanedMsg = loanedMsg.get();
-            m_input_cvimage->toImageMsg(getLoanedMsg);
-            pod_image_pub_->publish(std::move(loanedMsg));
+            pod_image_pub_->publish(std::move(outImg));
           }
         }};
   }

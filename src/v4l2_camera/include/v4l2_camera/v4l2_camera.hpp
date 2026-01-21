@@ -52,7 +52,6 @@ namespace v4l2_camera
     rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr info_pub_;
 
     // Publish PodImage msg
-    std::shared_ptr<shm_msgs::CvImage> m_input_cvimage{std::make_shared<shm_msgs::CvImage>()};
     rclcpp::Publisher<shm_interfaces::msg::PodImage8m>::SharedPtr pod_image_pub_;
 
     // Publisher used for inter process comm
